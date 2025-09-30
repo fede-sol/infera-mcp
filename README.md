@@ -36,7 +36,7 @@ pip install -r requirements.txt
 Ejecuta el servidor:
 
 ```bash
-python server.py
+fastmcp run server.py:mcp --transport http --port 8001
 ```
 
 ## Herramientas disponibles

@@ -1,25 +1,16 @@
 import os
 import requests
 from notion_client import Client
-from fastmcp import FastMCP
+from fastmcp import FastMCP, Context
 import dotenv
-
+from middleware import UserAuthMiddleware
 dotenv.load_dotenv()
 # Configuración del servidor MCP
 mcp = FastMCP("Notion-GitHub MCP Server")
-
-# Inicializar cliente de Notion
-notion_token = os.getenv("NOTION_TOKEN")
-if not notion_token:
-    raise ValueError("NOTION_TOKEN environment variable is required")
-
-notion = Client(auth=notion_token)
-
-# Cliente para GitHub (opcional)
-github_token = os.getenv("GITHUB_TOKEN")
+mcp.add_middleware(UserAuthMiddleware())
 
 @mcp.tool()
-def create_page(title: str) -> str:
+def create_page(title: str, context: Context = None) -> str:
     """
     Crea una nueva página de documentación en la base de conocimiento de Notion.
 
@@ -29,6 +20,7 @@ def create_page(title: str) -> str:
     Returns:
         ID de la página creada
     """
+    notion = context.get_state("notion")
     try:
         # Crear la página con título y contenido opcional
 
@@ -52,7 +44,7 @@ def create_page(title: str) -> str:
         return f"Error al crear la página: {str(e)}"
 
 @mcp.tool()
-def append_text_block(page_id: str, text: str) -> str:
+def append_text_block(page_id: str, text: str, context: Context = None) -> str:
     """
     Agrega un bloque de texto plano a una página existente de Notion.
 
@@ -63,6 +55,7 @@ def append_text_block(page_id: str, text: str) -> str:
     Returns:
         Mensaje de confirmación
     """
+    notion = context.get_state("notion")
     try:
         # Crear bloque de texto
         block = {
@@ -89,7 +82,7 @@ def append_text_block(page_id: str, text: str) -> str:
         return f"Error al agregar bloque de texto: {str(e)}"
 
 @mcp.tool()
-def append_title_block(page_id: str, title: str, level: int = 1) -> str:
+def append_title_block(page_id: str, title: str, level: int = 1, context: Context = None) -> str:
     """
     Agrega un título a una página de Notion.
 
@@ -102,6 +95,7 @@ def append_title_block(page_id: str, title: str, level: int = 1) -> str:
         Mensaje de confirmación
     """
     try:
+        notion = context.get_state("notion")
         # Crear bloque de título según el nivel
         block = {
             "object": "block",
@@ -127,7 +121,7 @@ def append_title_block(page_id: str, title: str, level: int = 1) -> str:
         return f"Error al agregar título: {str(e)}"
 
 @mcp.tool()
-def append_code_block(page_id: str, code: str, language: str) -> str:
+def append_code_block(page_id: str, code: str, language: str, context: Context = None) -> str:
     """
     Agrega un bloque de código formateado a una página de Notion.
 
@@ -140,6 +134,7 @@ def append_code_block(page_id: str, code: str, language: str) -> str:
         Mensaje de confirmación
     """
     try:
+        notion = context.get_state("notion")
         # Crear bloque de código
         block = {
             "object": "block",
@@ -166,7 +161,7 @@ def append_code_block(page_id: str, code: str, language: str) -> str:
         return f"Error al agregar bloque de código: {str(e)}"
 
 @mcp.tool()
-def search_a_page_in_notion(search_query: str, limit: int = 10) -> str:
+def search_a_page_in_notion(search_query: str, limit: int = 10, context: Context = None) -> str:
     """
     Busca páginas existentes en Notion por título o contenido.
 
@@ -177,6 +172,7 @@ def search_a_page_in_notion(search_query: str, limit: int = 10) -> str:
     Returns:
         Lista de páginas encontradas con su ID, título y URL
     """
+    notion = context.get_state("notion")
     try:
         # Buscar páginas usando la API de Notion
         search_results = notion.search(
@@ -218,7 +214,7 @@ def search_a_page_in_notion(search_query: str, limit: int = 10) -> str:
         return f"Error al buscar páginas: {str(e)}"
 
 @mcp.tool()
-def get_notion_page_content(page_id: str) -> str:
+def get_notion_page_content(page_id: str, context: Context = None) -> str:
     """
     Obtiene todo el contenido de una página existente de Notion, separado en bloques individuales.
 
@@ -229,6 +225,7 @@ def get_notion_page_content(page_id: str) -> str:
         Contenido completo formateado con información de bloques individuales para edición
     """
     try:
+        notion = context.get_state("notion")
         # Obtener información básica de la página
         page = notion.pages.retrieve(page_id)
 
@@ -388,7 +385,7 @@ def get_notion_page_content(page_id: str) -> str:
         return f"Error al obtener contenido de la página: {str(e)}"
 
 @mcp.tool()
-def update_block(block_id: str, new_content: str, block_type: str = "paragraph") -> str:
+def update_block(block_id: str, new_content: str, block_type: str = "paragraph", context: Context = None) -> str:
     """
     Modifica el contenido de un bloque de Notion ya existente.
 
@@ -401,6 +398,7 @@ def update_block(block_id: str, new_content: str, block_type: str = "paragraph")
         Mensaje de confirmación
     """
     try:
+        notion = context.get_state("notion")
         # Preparar el contenido según el tipo de bloque
         if block_type == "code":
             content = {
@@ -449,20 +447,21 @@ def update_block(block_id: str, new_content: str, block_type: str = "paragraph")
         return f"Error al actualizar bloque: {str(e)}"
 
 @mcp.tool()
-def get_github_file_content(repository_name: str, file_path: str, branch: str = "main") -> str:
+def get_github_file_content(repository_name: str, file_path: str, branch: str = "main", context: Context = None) -> str:
     """
     Recibe la URL de un archivo en un repositorio de GitHub y devuelve su contenido en formato de texto.
 
     Args:
-        repository_name: Nombre del repositorio de GitHub (ej: repo)
+        repository_name: Nombre del repositorio de GitHub (ej: owner/repo)
         file_path: Ruta del archivo en el repositorio (ej: file.py)
         branch: Rama del repositorio (ej: main)
     Returns:
         Contenido del archivo como texto
     """
     try:
+        github_token = context.get_state("github_token")
         # Convertir URL de GitHub a URL raw
-        raw_url = f"https://raw.githubusercontent.com/fede-sol/{repository_name}/refs/heads/{branch}/{file_path}"
+        raw_url = f"https://raw.githubusercontent.com/{repository_name}/refs/heads/{branch}/{file_path}"
 
         # Headers para autenticación si hay token
         headers = {}

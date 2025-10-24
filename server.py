@@ -536,5 +536,48 @@ def get_github_file_content(repository_name: str, file_path: str, branch: str = 
     except Exception as e:
         return f"Error inesperado: {str(e)}"
 
+@mcp.tool()
+def append_text_link_block(page_id: str, text: str, link: str, context: Context = None) -> str:
+    """
+    Agrega un bloque de texto plano a una página existente de Notion.
+
+    Args:
+        page_id: ID de la página donde agregar el texto
+        text: Contenido de texto a agregar
+        link: URL del enlace a agregar
+    Returns:
+        Mensaje de confirmación
+    """
+    notion = context.get_state("notion")
+    try:
+        # Crear bloque de texto
+        block = {
+            "object": "block",
+            "type": "paragraph",
+            "paragraph": {
+                "rich_text": [
+                    {
+                        "type": "text",
+                        "text": {
+                            "content": text,
+                            "link": {
+                                "url": link
+                            }
+                        }
+                    }
+                ]
+            }
+        }
+
+        notion.blocks.children.append(
+            block_id=page_id,
+            children=[block]
+        )
+
+        return "Bloque de texto agregado exitosamente"
+
+    except Exception as e:
+        return f"Error al agregar bloque de texto: {str(e)}"
+
 if __name__ == "__main__":
     mcp.run()

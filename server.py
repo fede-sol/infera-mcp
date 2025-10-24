@@ -214,6 +214,60 @@ def search_a_page_in_notion(search_query: str, limit: int = 10, context: Context
         return f"Error al buscar páginas: {str(e)}"
 
 @mcp.tool()
+def list_pages_in_notion(start_cursor: str = 0, limit: int = 20, context: Context = None) -> str:
+    """
+    Lista todas las páginas existentes en Notion.
+
+    Args:
+        start_cursor: posición de inicio para la paginación
+        limit: Número máximo de resultados a devolver (por defecto 20)
+
+    Returns:
+        Lista de páginas encontradas con su ID, título y URL
+    """
+    notion = context.get_state("notion")
+    try:
+        # Buscar páginas usando la API de Notion
+        search_results = notion.search(
+            query='',
+            filter={"property": "object", "value": "page"},
+            page_size=limit,
+            start_cursor=start_cursor
+        )
+
+        # Procesar resultados
+        pages = search_results.get("results", [])
+
+        if not pages:
+            return f"No se encontraron páginas"
+
+        # Formatear resultados
+        results = []
+        for page in pages:
+            page_id = page.get("id", "N/A")
+            properties = page.get("properties", {})
+            title_prop = properties.get("Title", {})
+
+            # Extraer título
+            title = "Sin título"
+            if title_prop.get("title"):
+                print(title_prop.get("Title"))
+                title_parts = [part.get("plain_text", "") for part in title_prop["title"]]
+                title = "".join(title_parts).strip()
+
+            # Crear URL de la página (formato estándar de Notion)
+            page_url = f"https://notion.so/{page_id.replace('-', '')}"
+
+            results.append(f"- **{title}** (ID: {page_id})\n  URL: {page_url}")
+
+        result_text = f"**Resultados de búsqueda** ({len(pages)} encontrados):\n\n" + "\n".join(results)
+
+        return result_text
+
+    except Exception as e:
+        return f"Error al buscar páginas: {str(e)}"
+
+@mcp.tool()
 def get_notion_page_content(page_id: str, context: Context = None) -> str:
     """
     Obtiene todo el contenido de una página existente de Notion, separado en bloques individuales.

@@ -214,12 +214,12 @@ def search_a_page_in_notion(search_query: str, limit: int = 10, context: Context
         return f"Error al buscar páginas: {str(e)}"
 
 @mcp.tool()
-def list_pages_in_notion(start_cursor: str = 0, limit: int = 20, context: Context = None) -> str:
+def list_pages_in_notion(start_cursor: str = None, limit: int = 20, context: Context = None) -> str:
     """
     Lista todas las páginas existentes en Notion.
 
     Args:
-        start_cursor: posición de inicio para la paginación
+        start_cursor: posición de inicio para la paginación. Si no se proporciona, se devuelve la primera página. Se debe extraer del resultado de la función anterior.
         limit: Número máximo de resultados a devolver (por defecto 20)
 
     Returns:
@@ -228,12 +228,17 @@ def list_pages_in_notion(start_cursor: str = 0, limit: int = 20, context: Contex
     notion = context.get_state("notion")
     try:
         # Buscar páginas usando la API de Notion
-        search_results = notion.search(
-            query='',
-            filter={"property": "object", "value": "page"},
-            page_size=limit,
-            start_cursor=start_cursor
-        )
+        search_object = {
+            "query": "",
+            "filter": {
+                "property": "object",
+                "value": "page"
+            },
+            "page_size": limit
+        }
+        if start_cursor:
+            search_object["start_cursor"] = start_cursor
+        search_results = notion.search(**search_object)
 
         # Procesar resultados
         pages = search_results.get("results", [])

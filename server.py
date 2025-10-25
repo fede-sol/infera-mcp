@@ -545,7 +545,7 @@ def get_github_file_content(repository_name: str, file_path: str, branch: str = 
         return f"Error inesperado: {str(e)}"
 
 @mcp.tool()
-def append_text_link_block(page_id: str, text: str, link: str, context: Context = None) -> str:
+def append_text_link_block(page_id: str, text: str, link: str, after_block_id: str = None, context: Context = None) -> str:
     """
     Agrega un bloque de texto plano a una página existente de Notion.
 
@@ -553,6 +553,7 @@ def append_text_link_block(page_id: str, text: str, link: str, context: Context 
         page_id: ID de la página donde agregar el texto
         text: Contenido de texto a agregar
         link: URL del enlace a agregar
+        after_block_id: ID del bloque después del cual se agregará el nuevo bloque. Si no se proporciona, se agrega al final de la página.
     Returns:
         Mensaje de confirmación
     """
@@ -577,10 +578,14 @@ def append_text_link_block(page_id: str, text: str, link: str, context: Context 
             }
         }
 
-        notion.blocks.children.append(
-            block_id=page_id,
-            children=[block]
-        )
+        body = {
+            "block_id": page_id,
+            "children": [block]
+        }
+        if after_block_id:
+            body["after"] = after_block_id
+
+        notion.blocks.children.append(**body)
 
         return "Bloque de texto agregado exitosamente"
 

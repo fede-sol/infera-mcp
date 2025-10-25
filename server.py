@@ -592,5 +592,25 @@ def append_text_link_block(page_id: str, text: str, link: str, after_block_id: s
     except Exception as e:
         return f"Error al agregar bloque de texto: {str(e)}"
 
+@mcp.tool()
+def delete_block(block_id: str, context: Context = None) -> str:
+    """
+    Elimina un bloque de Notion ya existente.
+
+    Args:
+        block_id: ID del bloque a eliminar
+    Returns:
+        Mensaje de confirmación
+    """
+    try:
+        notion = context.get_state("notion")
+        # Eliminar el bloque
+        notion.blocks.delete(block_id=block_id)
+
+        return "Bloque eliminado exitosamente"
+
+    except Exception as e:
+        return f"Error al eliminar bloque: {str(e)}"
+
 if __name__ == "__main__":
     mcp.run()

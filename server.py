@@ -10,12 +10,13 @@ mcp = FastMCP("Notion-GitHub MCP Server")
 mcp.add_middleware(UserAuthMiddleware())
 
 @mcp.tool()
-def create_page(title: str, context: Context = None) -> str:
+def create_page(title: str, notion_database_id: str, context: Context = None) -> str:
     """
     Crea una nueva página de documentación en la base de conocimiento de Notion.
 
     Args:
         title: Título de la nueva página
+        notion_database_id: ID de la base de datos donde se creará la página
 
     Returns:
         ID de la página creada
@@ -25,7 +26,7 @@ def create_page(title: str, context: Context = None) -> str:
         # Crear la página con título y contenido opcional
 
         page = notion.pages.create(
-            parent={"database_id": '2606269f472a803888c2e6e7855a8273'},
+            parent={"database_id": notion_database_id},
             properties={
                 "title": {
                     "title": [
